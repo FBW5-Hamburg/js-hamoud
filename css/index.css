@@ -1,0 +1,6 @@
+
+#canvas{
+    background-image: url('../images/ground.png');
+    background-size: cover;
+    border: 5px double #000;
+}
