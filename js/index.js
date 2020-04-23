@@ -108,6 +108,8 @@ setInterval(() => {
 }
 
 
+
+
 // links of created images
 paling.src = './images/paling.png'
 tank.src = './images/tankMoving.png'
