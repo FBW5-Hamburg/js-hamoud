@@ -4,19 +4,20 @@ var ctx = canvas.getContext("2d");
 var player_lives = 3;
 var score = 0;
 
-var tank_width = 30;
-var tank_height = 40;
+var tank_width = 75;
+var tank_height = 100;
 var tank_speed = 0.1; //actually used to increment the Y coords of all the blocks, set at 0.3
 
 var tank = new Map();
 tank.set("X", canvas.width / 2);
-tank.set("Y", canvas.height - 70);
+tank.set("Y", canvas.height - 130);
 tank.set("width", tank_width);
 tank.set("height", tank_height);
 
 var balls = [];
 var ball_speed =   8.6;
 var since_last_fire = performance.now();
+let fireCount = 1
 
 var blocks = [];
 var tank_block_collision_bool = true;
@@ -55,13 +56,24 @@ function KeyUpFunc(e) {
 //Drawing the Tank
 function drawTank() {
   ctx.beginPath();
-  ctx.rect(tank.get("X"), tank.get("Y"), tank_width, tank_height);
-  ctx.fillStyle = "green";
+  const tank1 = document.createElement('img')
+  tank1.src = './images/tankMoving.png'
+  ctx.drawImage(tank1, tank.get("X"), tank.get("Y"),  tank_width, tank_height)
+  // ctx.rect(tank.get("X"), tank.get("Y"), tank_width, tank_height);
+  // ctx.fillStyle = "green";
+  // ctx.rect(tank.get("X") + tank_width / 2 - 5, tank.get("Y") - 15, 10, 15);
+  // ctx.fillStyle = "green";
+  // ctx.fill();
 
-  ctx.rect(tank.get("X") + tank_width / 2 - 5, tank.get("Y") - 15, 10, 15);
-  ctx.fillStyle = "green";
-
-  ctx.fill();
+  let tank1_triggeredY = 10
+  const tank1_triggered = document.createElement('img')
+  tank1_triggered.src = './images/tank_triggered.png'
+            ctx.drawImage(tank1_triggered, 0, tank1_triggeredY, 150, 200,  tank.get("X"),  tank.get("Y") + 30,  tank_width, tank_height)
+            if (tank1_triggeredY <= 0) {
+                tank1_triggeredY = 40
+            } else {
+                tank1_triggeredY -= 10
+            }
   ctx.closePath();
 }
 
@@ -93,7 +105,7 @@ function drawNewBall(ball_X, ball_Y) {
 function drawBalls() {
   for (var i = 0; i < balls.length; i++) {
     ctx.beginPath();
-    ctx.arc(balls[i].get("X"), balls[i].get("Y"), 5, 0, Math.PI * 2);
+    ctx.arc(balls[i].get("X")+24, balls[i].get("Y")+ 30, 5, 0, Math.PI * 2);
     ctx.fillStyle = "red";
     ctx.fill();
     ctx.closePath();
@@ -329,7 +341,7 @@ function draw() {
   ball_monster_collision();
   moverFunc();
 
-  if (space_pressed && balls.length < 10 && performance.now() - since_last_fire > 50) {
+  if (space_pressed && balls.length < fireCount && performance.now() - since_last_fire > 100) {
     drawNewBall(tank.get("X") + 15, tank.get("Y") - 30);
   }
   if (right_pressed && tank.get("X") + tank_width < canvas.width-10) {
