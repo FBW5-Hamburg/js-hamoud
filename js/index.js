@@ -13,11 +13,13 @@ const tank = document.createElement('img')
 const tankFire = document.createElement('img')
 const tank_triggered = document.createElement('img')
 const paling = document.createElement('img')
+const gameOver = document.createElement('img')
 
 // those variables control the hol game 
-let player_lives = 3;
+let gameTimer = 60;
 let score = 0;
 let status = 'tankMoving'
+let collision = false
 
 // those to give the game movement 
 let tankX = 460
@@ -27,26 +29,37 @@ let palingY = 1000
 // the controllers keys (right ,left ,fire)
 let right_pressed = false;
 let left_pressed = false;
+let up_pressed = false;
+let down_pressed = false;
 let space_pressed = false;
 
 // writing the game score
-ctx1.fillStyle = 'rgba(0,0,0,50)'
-ctx1.fillRect(20, 50, 180, 50)
 ctx2.font = "30px Verdana";
 var gradient = ctx1.createLinearGradient(0, 0, canvas.width, 0);
-gradient.addColorStop("0", " magenta");
-gradient.addColorStop("0.4", "blue");
-gradient.addColorStop("0.1", "red");
+gradient.addColorStop("0.1", " yellow");
+gradient.addColorStop("0.2", "blue");
+gradient.addColorStop("0", "red");
 // Fill with gradient
 ctx2.fillStyle = gradient;
 ctx2.fillStyle = 'font-weight:bold';
 setInterval(() => {
-    ctx2.clearRect(0, 0, 500, 200)
-    ctx2.fillText("SCORE: " + score, 20, 40);
-}, 100);
+    if (!collision) {
+        ctx1.clearRect(20, 10, 180, 38)
+        ctx2.clearRect(20, 10, 180, 38)
+        ctx1.fillStyle = 'rgba(255, 27, 27, 0.319)'
+        ctx1.fillRect(20, 10, 180, 38)
+        ctx1.fillStyle = 'rgba(255, 27, 27, 0.319)'
+        ctx2.fillText("SCORE: " + score, 20, 40);
+    }
+}, 1);
 
+// make the game timer 
+setInterval(() => {
+    if (gameTimer >= 0) {
+        gameTimer--
+    }
+}, 1000);
 
-let shells = []
 document.addEventListener("keydown", KeyDownFunc, false);
 document.addEventListener("keyup", KeyUpFunc, false);
 
@@ -58,7 +71,12 @@ function KeyDownFunc(e) {
         left_pressed = true;
     } else if (e.keyCode == 32) {
         space_pressed = true;
+    } else if (e.keyCode == 38) {
+        up_pressed = true;
+    } else if (e.keyCode == 40) {
+        down_pressed = true;
     }
+
 }
 
 function KeyUpFunc(e) {
@@ -68,6 +86,10 @@ function KeyUpFunc(e) {
         left_pressed = false;
     } else if (e.keyCode == 32) {
         space_pressed = false;
+    } else if (e.keyCode == 38) {
+        up_pressed = false;
+    } else if (e.keyCode == 40) {
+        down_pressed = false;
     }
 }
 setInterval(() => {
@@ -91,18 +113,22 @@ setInterval(() => {
 paling.src = './images/paling.png'
 tank.src = './images/tankMoving.png'
 tankFire.src = './images/tankFire.png'
+gameOver.src = './images/game-over.png'
+
 
 // moving the tank and fire and moving the palings in this interval
 tank.onload = () => {
     setInterval(() => {
         ctx.clearRect(10, 0, 80, 800)
         ctx.clearRect(920, 0, 80, 800)
-        ctx.drawImage(paling, 0, palingY, 80, palingY + 2000, 25, 0, 50, 700)
+        ctx.drawImage(paling, 0, palingY, 80, palingY + 2000, 25, 40, 50, 700)
         ctx.drawImage(paling, 0, palingY, 80, palingY + 2000, 920, 0, 50, 700)
         if (palingY <= 500) {
             palingY = 1000
         } else {
-            palingY -= 30
+            if (!collision) {
+                palingY -= 30
+            }
         }
         ctx.clearRect(80, 550, 840, 190)
         if (status == 'tankMoving') {
@@ -119,12 +145,12 @@ tank.onload = () => {
                 tank_triggeredY -= 10
             }
         }
-    }, 100);
+    }, 80);
 }
 
 // generating a tank shell 
 function generateShell(lastX) {
-    let shellY = 530
+    let shellY = 550
     let shellInterval = setInterval(() => {
         ctx.fillStyle = "red";
         if (shellY < 530) {
@@ -144,7 +170,6 @@ function generateShell(lastX) {
 
 
 // create the enemy
-let collision = false
 // randomCoords creator for the blocks 
 let randomInterval = setInterval(() => {
     let randomX = Math.floor(Math.random() * 610) + 95
@@ -156,7 +181,7 @@ let randomInterval = setInterval(() => {
 let blockInterval
 var blocks = []
 function blockGenerator(x, width) {
-    let enemyY = -40
+    let enemyY = 40
     let blockObj = {
         x: x,
         y: enemyY,
@@ -167,7 +192,15 @@ function blockGenerator(x, width) {
         ctx1.clearRect(blockObj.x - 5, blockObj.y - 10, blockObj.bWidth + 10, 40);
         ctx1.fillRect(blockObj.x, blockObj.y, blockObj.bWidth, 40);
         if (blockObj.y < 700 && !collision) {
-            blockObj.y += 10
+            if (up_pressed) {
+                blockObj.y += 17
+                ctx1.clearRect(blockObj.x - 5, blockObj.y - 17, blockObj.bWidth + 10, 40);
+                ctx1.fillRect(blockObj.x, blockObj.y, blockObj.bWidth, 40);
+            } else if (down_pressed) {
+                blockObj.y += 3
+            } else {
+                blockObj.y += 10
+            }
         }
         blocks.forEach(blockObj => {
             collisionChecker(blockObj.x, blockObj.bWidth, blockObj.y)
@@ -181,25 +214,23 @@ function blockGenerator(x, width) {
 // randomCoords creator for the stars 
 let randomInterval1 = setInterval(() => {
     let randomX = Math.floor(Math.random() * 720) + 170
-    if (!blocksChecker(randomX, -40)) {
+    if (!blocksChecker(randomX, 60) && !collision) {
         drawStar(randomX - 20, 15, 12, 3)
     }
+}, 3000);
 
-}, 5000);
 // check if there is blocks in this point
 function blocksChecker(randomX, y) {
     blocks.forEach(block => {
-        let firstCornerCheck = checkInside(block.x, block.y, block.bWidth, 40, randomX - 15, y)
-        let secondCornerCheck = checkInside(block.x, block.y, block.bWidth, 40, randomX + 35, y)
-        let thirdCornerCheck = checkInside(block.x, block.y, block.bWidth, 40, randomX - 15, y)
-        let fourthCornerCheck = checkInside(block.x, block.y, block.bWidth, 40, randomX + 35, y)
+        let firstCornerCheck = checkInside(block.x, block.y, block.bWidth, 40, randomX - 20, y + 25)
+        let secondCornerCheck = checkInside(block.x, block.y, block.bWidth, 40, randomX + 40, y + 25)
+        let thirdCornerCheck = checkInside(block.x, block.y, block.bWidth, 40, randomX - 20, y - 25)
+        let fourthCornerCheck = checkInside(block.x, block.y, block.bWidth, 40, randomX + 40, y - 25)
         if (firstCornerCheck || secondCornerCheck || thirdCornerCheck || fourthCornerCheck) {
             return true
         }
     })
 }
-
-
 
 // check if there is a collision
 function collisionChecker(x, xWidth, y) {
@@ -209,17 +240,41 @@ function collisionChecker(x, xWidth, y) {
         clearInterval(blockInterval)
         clearInterval(randomInterval)
         collision = true
+        ctx2.font = '700 30px Arial';
+        ctx2.fillStyle = 'rgb(255, 27, 27)'
+        ctx2.drawImage(gameOver, 6, 6, 1000, 700)
+        ctx2.fillText("YOUR SCORE: " + score, 500, 500);
+        ctx2.font = '400 25px Arial';
+        ctx2.fillStyle = 'rgb(0, 27, 27)'
+        ctx2.fillText("Press Space to Play agin ", 350, 600);
+        if (space_pressed) {
+            window.location.reload()
+        }
     }
-
+    setInterval(() => {
+        if (gameTimer < 0) {
+            console.log(gameTimer);
+            clearInterval(blockInterval)
+            clearInterval(randomInterval)
+            collision = true
+            ctx2.font = '700 30px Arial';
+            ctx2.fillStyle = 'rgb(255, 27, 27)'
+            ctx2.drawImage(gameOver, 6, 6, 1000, 700)
+            ctx2.fillText("YOUR SCORE: " + score, 500, 500);
+            ctx2.font = '400 25px Arial';
+            ctx2.fillStyle = 'rgb(0, 27, 27)'
+            ctx2.fillText("Press Space to Play agin ", 350, 600);
+            if (space_pressed) {
+                window.location.reload()
+            }
+        }
+    }, 1000);
 }
-
-
-
 
 var stars = []
 function drawStar(cx, spikes, outerRadius, innerRadius) {
 
-    let cy = -40
+    let cy = 40
     let starObj = {
         x: cx,
         y: cy,
@@ -227,10 +282,16 @@ function drawStar(cx, spikes, outerRadius, innerRadius) {
     }
     let starInterval = setInterval(() => {
         if (cy < 900 && !collision) {
-            starObj.y += 10
-        } else{
-           clearInterval( starInterval)
-           starObj.done = true
+            if (up_pressed) {
+                starObj.y += 17
+            } else if (down_pressed) {
+                starObj.y += 3
+            } else {
+                starObj.y += 10
+            }
+        } else {
+            clearInterval(starInterval)
+            //    starObj.done = true
         }
         let rot = Math.PI / 2 * 3;
         let x = starObj.x;
@@ -283,4 +344,5 @@ function shellCollisionChecker(shellX, shellY) {
 function checkInside(enX, enY, enWidth, enHeight, pointX, pointY) {
     return (pointX >= enX && pointX <= enX + enWidth) && (pointY >= enY && pointY <= enY + enHeight)
 }
+
 
